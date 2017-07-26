@@ -4,25 +4,25 @@ import numpy as np
 import os
 import blosc
 from dataset import Batch, action, model
-from .layers import conv_mpool_activation, fc_layer
+from layers import conv_mpool_activation, fc_layer
 import tensorflow as tf
 
 class MnistBatch(Batch):
     """ Mnist batch and models
     """
-    def __init__(index, *args, **kwargs):
+    def __init__(self, index, *args, **kwargs):
         """ Init func, inherited from base batch
         """
-        super().__init(index, *args, **kwargs)
+        super().__init__(index, *args, **kwargs)
 
     @property
-    def components:
+    def components():
         """ Components of mnist-batch
         """
         return 'images', 'labels'
 
     @action
-    def load(src):
+    def load(self, src):
         """ Load mnist pics with specifed indices
 
         Args:
@@ -32,11 +32,13 @@ class MnistBatch(Batch):
             self
         """
         # read blosc images, labels
-        with open(os.path.join(src, 'mnist_pics.blosc'), 'r') as file:
-            self.images = blosc.unpack_array(file)[self.indices]
+        with open(os.path.join(src, 'mnist_pics.blk'), 'rb') as file:
+            self.images = blosc.unpack_array(file.read())[self.indices]
 
-        with open(os.path.join(src, 'mnist_labels.blosc'), 'r') as file:
-            self.labels = blosc.unpack_array(file)[self.indices]
+        with open(os.path.join(src, 'mnist_labels.blk'), 'rb') as file:
+            self.labels = blosc.unpack_array(file.read())[self.indices]
+
+        return self
 
     @model()
     def convy():
@@ -86,6 +88,7 @@ class MnistBatch(Batch):
         """
         x, y_, _, train_step = model[0]
         sess.run(train_step, feed_dict={x: self.images, y_: self.labels})
+        return self
 
     @action(model='convy')
     def update_stats(self, model, sess, accs):
@@ -100,3 +103,4 @@ class MnistBatch(Batch):
         x, y_, _, _ = model[0]
 
         accs.append(sess.run(accuracy, feed_dict={x: self.images, y_: self.labels}))
+        return self
