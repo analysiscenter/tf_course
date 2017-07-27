@@ -16,7 +16,7 @@ class MnistBatch(Batch):
         super().__init__(index, *args, **kwargs)
 
     @property
-    def components():
+    def components(self):
         """ Components of mnist-batch
         """
         return 'images', 'labels'
