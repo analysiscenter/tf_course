@@ -22,21 +22,29 @@ class MnistBatch(Batch):
         return 'images', 'labels'
 
     @action
-    def load(self, src):
+    def load(self, fmt='blosc', src):
         """ Load mnist pics with specifed indices
 
         Args:
-            src: path to dir with blosc-packed mnist images and labels
+            fmt: format of source. Can be either 'blosc' or 'ndarray'
+            src: if fmt='blosc', then src is a path to dir with blosc-packed
+                mnist images and labels are stored.
+                if fmt='ndarray' - this is a tuple with arrays of images and labels
 
         Return:
             self
         """
-        # read blosc images, labels
-        with open(os.path.join(src, 'mnist_pics.blk'), 'rb') as file:
-            self.images = blosc.unpack_array(file.read())[self.indices]
+        if fmt == 'blosc':     
+            # read blosc images, labels
+            with open(os.path.join(src, 'mnist_pics.blk'), 'rb') as file:
+                self.images = blosc.unpack_array(file.read())[self.indices]
 
-        with open(os.path.join(src, 'mnist_labels.blk'), 'rb') as file:
-            self.labels = blosc.unpack_array(file.read())[self.indices]
+            with open(os.path.join(src, 'mnist_labels.blk'), 'rb') as file:
+                self.labels = blosc.unpack_array(file.read())[self.indices]
+        elif fmt == 'ndarray':
+            all_images, all_labels = src
+            self.images = all_images[self.indices]
+            self.labels = all_labels[self.indices]
 
         return self
 
