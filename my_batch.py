@@ -22,7 +22,7 @@ class MnistBatch(Batch):
         return 'images', 'labels'
 
     @action
-    def load(self, fmt='blosc', src):
+    def load(self, src, fmt='blosc'):
         """ Load mnist pics with specifed indices
 
         Args:
