@@ -4,7 +4,7 @@ import numpy as np
 import os
 import blosc
 from dataset import Batch, action, model
-from layers import conv_mpool_bnorm_activation, fc_layer
+from layers import conv_mpool_activation, fc_layer
 import tensorflow as tf
 
 class MnistBatch(Batch):
@@ -59,15 +59,14 @@ class MnistBatch(Batch):
              [true categorical labels, categorical_hat labels, accuracy]]
         """
         # build the net
-        training = tf.placeholder(tf.bool, shape=[], name='mode')
         x = tf.placeholder(tf.float32, [None, 784])
         x_as_pics = tf.reshape(x, shape=[-1, 28, 28, 1])
-        net = conv_mpool_bnorm_activation('conv_first', x_as_pics, n_channels=4, mpool=True, bnorm=True, training=training,
-                                          kernel_conv=(7, 7), kernel_pool=(6, 6), stride_pool=(2, 2))
-        net = conv_mpool_bnorm_activation('conv_second', net, n_channels=16, kernel_conv=(5, 5), bnorm=True, training=training,
-                                          mpool=True, kernel_pool=(5, 5), stride_pool=(2, 2))
-        net = conv_mpool_bnorm_activation('conv_third', net, n_channels=32, kernel_conv=(3, 3), bnorm=True, training=training,
-                                          mpool=True, kernel_pool=(2, 2), stride_pool=(2, 2))
+        net = conv_mpool_activation('conv_first', x_as_pics, n_channels=4, mpool=True,
+                                    kernel_conv=(7, 7), kernel_pool=(6, 6), stride_pool=(2, 2))
+        net = conv_mpool_activation('conv_second', net, n_channels=16, kernel_conv=(5, 5),
+                                    mpool=True, kernel_pool=(5, 5), stride_pool=(2, 2))
+        net = conv_mpool_activation('conv_third', net, n_channels=32, kernel_conv=(3, 3),
+                                    mpool=True, kernel_pool=(2, 2), stride_pool=(2, 2))
         net = tf.contrib.layers.flatten(net)
         net = fc_layer('fc_first', net, 128)
         net = tf.nn.relu(net)
@@ -78,18 +77,14 @@ class MnistBatch(Batch):
 
         # loss
         loss = tf.nn.softmax_cross_entropy_with_logits(logits=net, labels=y_, name='loss')
-
-        # optimization step
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        with tf.control_dependencies(update_ops):
-            train_step = tf.train.AdamOptimizer().minimize(loss)
+        train_step = tf.train.AdamOptimizer().minimize(loss)
 
         # stats
         labels_hat = tf.cast(tf.argmax(net, axis=1), tf.float32, name='labels_hat')
         labels = tf.cast(tf.argmax(y_, axis=1), tf.float32, name='labels')
         accuracy = tf.reduce_mean(tf.cast(tf.equal(labels_hat, labels), tf.float32), name='accuracy')
 
-        return [[x, y_, loss, train_step, training], [labels, labels_hat, accuracy]]
+        return [[x, y_, loss, train_step], [labels, labels_hat, accuracy]]
 
     @action(model='convy')
     def train_convy(self, model, sess):
@@ -99,8 +94,8 @@ class MnistBatch(Batch):
             model: do not supply this arg, always the output of convy-model defined above
             sess: tf-session in which learning variables are to be updated
         """
-        x, y_, _, train_step, training = model[0]
-        sess.run(train_step, feed_dict={x: self.images, y_: self.labels, training: True})
+        x, y_, _, train_step = model[0]
+        sess.run(train_step, feed_dict={x: self.images, y_: self.labels})
         return self
 
     @action(model='convy')
@@ -113,7 +108,7 @@ class MnistBatch(Batch):
             accs: list with accuracies
         """
         _, _, accuracy = model[1]
-        x, y_, _, _, training = model[0]
+        x, y_, _, _ = model[0]
 
-        accs.append(sess.run(accuracy, feed_dict={x: self.images, y_: self.labels, training: False}))
+        accs.append(sess.run(accuracy, feed_dict={x: self.images, y_: self.labels}))
         return self
