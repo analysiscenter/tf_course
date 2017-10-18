@@ -17,7 +17,7 @@ class Cifar10Batch(Batch):
         Return:
             ___
         """
-        super().init(index, *args, **kwargs)
+        super().__init__(index, *args, **kwargs)
         self.images = None
         self.labels = None
         self.picnames = None
@@ -59,7 +59,6 @@ class Cifar10Batch(Batch):
         elif name == 'picnames':
             return np.reshape(component, (-1, 1))
 
-
     @action
     def load(self, src, fmt='pkl'):
         """ Load cifar-10 pics.
@@ -77,7 +76,7 @@ class Cifar10Batch(Batch):
             self.
         """
         if fmt == 'pkl':
-            components = set(os.listdir(src)) | set([comp + '.pkl' for comp in self.components])
+            components = set(os.listdir(src)) & set([comp + '.pkl' for comp in self.components])
             for comp in components:
                 with open(os.path.join(src, comp), 'rb') as file:
                     component = self._adjust_shape(pickle.load(file)[self.indices], comp.split('.')[0])
@@ -85,3 +84,5 @@ class Cifar10Batch(Batch):
         elif fmt == 'ndarray':
             for comp in src:
                 setattr(self, comp, self._adjust_shape(src.get(comp)[self.indices], comp))
+
+        return self
