@@ -1,4 +1,4 @@
-from dataset import DatasetIndex
+from dataset import DatasetIndex, Dataset, Pipeline
 import numpy as np
 import os
 import pickle
@@ -58,7 +58,7 @@ class SmallResNet(TFModel):
         n_classes = self.get_from_config('n_classes', 10)
 
         # set placeholders
-        inputs = tf.placeholder(tf.float32, shape=(-1, ) + pic_shape + (n_channels, ))
+        inputs = tf.placeholder(tf.float32, shape=(-1, ) + pic_shape + (n_channels, ), name='images')
         targets = tf.placeholder(tf.float32, shape=(-1, ) + (n_classes, ), name='targets')
 
         # resnet
@@ -69,3 +69,10 @@ class SmallResNet(TFModel):
         net = self.halfing_block(net)
         net = flatten(net)
         net = tf.layers.dense(net, n_classes, name='predictions')
+
+# set up training pipeline
+train_ppl = (Pipeline()
+             .init_model('static', SmallResNet, 'smallnet',
+                         dict(pic_shape=(30, 30), n_channels=2, n_classes=11))
+             .train_model('smallnet', feed_dict={'images': B('images'), 'targets': B('labels')})
+             )
