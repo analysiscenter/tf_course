@@ -3,7 +3,7 @@
 from cifar_batch import Cifar10Batch
 import tensorflow as tf
 
-from dataset.dataset.models.tf.layers import conv2d_block
+from dataset.dataset.models.tf.layers import conv2d_block, iflatten
 from dataset.dataset.models.tf import TFModel
 
 class SmallResNet(TFModel):
