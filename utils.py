@@ -1,6 +1,7 @@
 import pickle
 import os
 import PIL.Image
+import numpy as np
 
 def read_in_dict(src, components):
     """ Read all cifar-10 dataset in a dict.

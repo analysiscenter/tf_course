@@ -40,7 +40,9 @@ class SmallResNet(TFModel):
         targets = tf.placeholder(tf.float32, shape=(None, ) + (n_classes, ), name='targets')
 
         # net
-        net = conv2d_block(inputs, 64, (7, 7), 'cnap', is_training=self.is_training)
+        net = conv2d_block(inputs, 16, (3, 3), 'cna', is_training=self.is_training)
+        net = self.identity_block(net)
+        net = self.identity_block(net)
         net = self.identity_block(net)
         net = self.identity_block(net)
         net = self.halfing_block(net)
@@ -50,8 +52,9 @@ class SmallResNet(TFModel):
         net = self.identity_block(net)
         net = self.identity_block(net)
         net = self.halfing_block(net)
-        net = iflatten(net)
-        net = tf.layers.dense(net, 256)
+        net = self.identity_block(net)
+        net = self.identity_block(net)
+        net = tf.reduce_mean(net, axis=(1, 2))
         net = tf.layers.dense(net, n_classes)
         net = tf.identity(net, name='predictions')
 

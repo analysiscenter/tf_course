@@ -3,7 +3,7 @@
 import numpy as np
 import os
 import pickle
-from dataset import Batch, action, model
+from dataset import Batch, action, model, inbatch_parallel
 
 class Cifar10Batch(Batch):
     """ Cifar-10 batch.
@@ -67,7 +67,7 @@ class Cifar10Batch(Batch):
             src: if fmt is 'pkl', then src is assumed to be a path to a folder containing
                 pickled files with components ('component.pkl') that should be loaded.
                 if fmt is 'ndarray', then src is assumed to be a dict with keys that correspond
-                to compoenents to be loaded. In both cases ndarrays are subindexed according
+                to components to be loaded. In both cases ndarrays are subindexed according
                 to indices in batch.
             fmt: format of src. Can be either 'pkl' (pickle) or 'ndarray'.
             nclasses: type of cifar. 10 corresponds to cifar-10.
@@ -84,5 +84,45 @@ class Cifar10Batch(Batch):
         elif fmt == 'ndarray':
             for comp in src:
                 setattr(self, comp, self._adjust_shape(src.get(comp)[self.indices], comp))
+
+        return self
+
+    def _init_components(self, components=None):
+        """ Init func that fetches dict of components for a list of workers.
+
+        Args:
+            components: list of components to fetch.
+
+        Return:
+            list of components-dicts.
+        """
+        components = self.components if components is None else components
+        list_of_args = []
+        for ix in self.indices:
+            dict_of_args = {}
+            for comp in components:
+                dict_of_args.update({comp: self.get(ix, comp)})
+            list_of_args.append(dict_of_args)
+
+        return list_of_args
+
+    @action
+    @inbatch_parallel(init='indices', target='threads')
+    def shift_pic(self, ix, max_shift=4, padding='reflect'):
+        """ Random shift for <= max_shift pixels in both axes. Implemented in two steps:
+                padding and slicing.
+
+        Args:
+            max_shift: maximum shift in pixels.
+
+        Return:
+            self.
+        """
+        left, lower = np.random.randint(0, 2 * max_shift, 2)
+        shape_x, shape_y = self.images.shape[1: 3]
+        slc = (slice(lower, lower + shape_x, None), slice(left, left + shape_y, None))
+
+        for i in range(self.images.shape[-1]):
+            self.get(ix, 'images')[:, :, i] =  np.pad(self.get(ix, 'images')[:, :, i], max_shift, mode=padding)[slc]
 
         return self
