@@ -23,6 +23,8 @@ class TestModel(TFModel):
         config['inputs'].update(images=dict(shape=(*PIC_SHAPE, N_CHANNELS)),                      # note that shape is specified without batch-size-axis (no None)
                                 labels=dict(shape=(N_CLASSES, ), name='targets'))
         config['input_block'].update(inputs='images')
+        config['output'].update(ops='accuracy')
+
         config['loss'] = 'ce'
         config['optimizer'] = 'Adam'
         return config
