@@ -3,8 +3,37 @@
 from cifar_batch import Cifar10Batch
 import tensorflow as tf
 
-from dataset.dataset.models.tf.layers import conv2d_block, iflatten
+from dataset.dataset.models.tf.layers import conv_block
 from dataset.dataset.models.tf import TFModel
+
+# global constants for shape of pics
+PIC_SHAPE = (32, 32)
+N_CHANNELS = 3
+N_CLASSES = 10
+
+class TestModel(TFModel):
+    """ Test-model for figuring out configs in new version of TFModel
+    """
+    @classmethod
+    def default_config(cls):
+        config = TFModel.default_config()
+        config['body'].update(layout='cap cnap ca', filters=(16, 32, 64), kernel_size=(5, 3, 3))
+        config['head'].update(layout='Pf')
+        config['inputs'].update(images=dict(shape=(None, *PIC_SHAPE, N_CHANNELS)),
+                                labels=dict(shape=(None, N_CLASSES), name='targets'))
+        config['input_block'].update(inputs='images')
+        config['loss'] = 'ce'
+        config['optimizer'] = 'Adam'
+
+
+    @classmethod
+    def body(cls, inputs, name='body', **kwargs):
+        kwargs = cls.fill_params('body', **kwargs) # kwargs contains mixed args from default_conf -> build_conf -> model_conf
+                                                   # the line fetches dict of args for body
+        print('filled args in body: ', kwargs)
+        output = conv_block(inputs, **kwargs)
+        return output
+
 
 class SmallResNet(TFModel):
     """ Model-class implementing small resnet.
