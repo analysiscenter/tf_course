@@ -17,19 +17,23 @@ class TestModel(TFModel):
     @classmethod
     def default_config(cls):
         config = TFModel.default_config()
-        config['body'].update(layout='cap cnap ca', filters=(16, 32, 64), kernel_size=(5, 3, 3))
-        config['head'].update(layout='Pf')
-        config['inputs'].update(images=dict(shape=(None, *PIC_SHAPE, N_CHANNELS)),
-                                labels=dict(shape=(None, N_CLASSES), name='targets'))
+        config['body'].update(layout='cap cnap ca', filters=[16, 32, 64], kernel_size=[5, 3, 3])  # importantly, kernel_size here is list
+                                                                                                  # when list, different kernels are used for different convs
+        config['head'].update(layout='Pf', units=N_CLASSES)
+        config['inputs'].update(images=dict(shape=(*PIC_SHAPE, N_CHANNELS)),                      # note that shape is specified without batch-size-axis (no None)
+                                labels=dict(shape=(N_CLASSES, ), name='targets'))
         config['input_block'].update(inputs='images')
         config['loss'] = 'ce'
         config['optimizer'] = 'Adam'
+        return config
 
 
     @classmethod
     def body(cls, inputs, name='body', **kwargs):
-        kwargs = cls.fill_params('body', **kwargs) # kwargs contains mixed args from default_conf -> build_conf -> model_conf
-                                                   # the line fetches dict of args for body
+        print(kwargs)
+        kwargs = cls.fill_params('body', **kwargs) # the line isn't needed here.
+                                                   # It means "take default_config['body'] and merge it with body-args that came from kwargs"
+                                                   # is_training is put into kwargs from default_config.
         print('filled args in body: ', kwargs)
         output = conv_block(inputs, **kwargs)
         return output
